@@ -1,0 +1,16 @@
+[package]
+name = "nopuma-cli"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clap = { version = "4.5.30", features = ["derive"] }
+clap_builder = "4.5.29"
+crossterm = "0.28.1"
+dirs = "6.0.0"
+dotenv = "0.15.0"
+reqwest = "0.12.12"
+serde = "1.0.217"
+serde_json = "1.0.138"
+tokio = { version = "1.43.0", features = ["full"] }
+tui = "0.19.0"
