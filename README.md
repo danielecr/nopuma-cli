@@ -6,6 +6,38 @@ Based on concept of adaptation of design, this project is composed of three main
 - validate procedure
 - show existing procedures
 
+## Certificate Management
+
+- generate a private key
+- generate a certificate request
+
+Generate a paramenter file for 256bit ECDSA key:
+
+openssl genpkey -genparam -algorithm ec -pkeyopt ec_paramgen_curve:P-256 -out ECPARAM.pem
+
+Then generate CSR (certificate request):
+openssl req -newkey ec:ECPARAM.pem -keyout PRIVATEKEY.key -out MYCSR.csr
+
+Authority: (generate a private key)
+openssl ecparam -name prime256v1 -genkey -noout -out key.pem
+
+get public key from private:
+openssl ec -in key.pem -pubout -out public.pem
+
+use letsencrypt to sign its public key self sign its certificate:
+(VIEW: https://crates.io/crates/certbot && https://certbot.eff.org/instructions)
+
+
+1. receive MYCSR.csr
+2. openssl x509 -req -days 360 -in server.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out server.crt
+3. use letsencrypt to sign its public key self sign its certificate (use certbot)
+s
+
+i.e.:
+openssl x509 -req -days 360 -in client.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out client.crt
+
+## Commands
+
 
 > nopuma config --server=https://nopuma-service.domain.com
 

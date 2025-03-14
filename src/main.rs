@@ -1,7 +1,9 @@
-use std::path::PathBuf;
+use std::{io::Write, path::PathBuf};
 
 use clap::{CommandFactory, Parser, Subcommand};
 use clap_complete::{generate_to, Shell};
+use serde::{Deserialize, Serialize};
+use serde_json;
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -16,6 +18,7 @@ struct Cli {
 
 }
 
+
 #[derive(Subcommand)]
 enum RunMode {
     #[clap(name = "config")]
@@ -23,6 +26,9 @@ enum RunMode {
         #[arg(short, long)]
         set_server: String,
     },
+
+    #[clap(name = "config-show")]
+    ConfigShow,
     
     #[clap(name = "proc-define")]
     ProcDefine,
@@ -50,20 +56,79 @@ enum RunMode {
     },
 }
 
+#[derive(Serialize, Deserialize)]
+struct Config {
+    server: String,
+}
+
+impl Config {
+    fn new() -> Self {
+        Config {
+            server: "https://localhost:8080".to_string(),
+        }
+    }
+
+    fn config_writer(&mut self, set_server: &str) {
+        let config = Config {
+            server: set_server.to_string(),
+        };
+        // get the home directory from the environment
+        let home = std::env::var("HOME").unwrap();
+        // create the directory startinif it doesn't exist
+        std::fs::create_dir_all(format!("{}/.nopuma", &home)).unwrap();
+        let mut file = std::fs::File::create(".nopuma/config.json").unwrap();
+        file.write(serde_json::to_string(&config).unwrap().as_bytes()).unwrap();
+    }
+
+    fn config_reader() -> Self {
+        let home = std::env::var("HOME").unwrap();
+        match std::fs::File::open(format!("{}/.nopuma/config.json", &home)) {
+            Ok(file) => {
+                let config: Config = serde_json::from_reader(file).unwrap();
+                config
+            }
+            Err(_) => {
+                let config = Config::new();
+                let mut file = std::fs::File::create(format!("{}/.nopuma/config.json", &home)).unwrap();
+                file.write(serde_json::to_string(&config).unwrap().as_bytes()).unwrap();
+                config
+            }
+        }
+    }
+
+}
+
 fn main() {
     let cli = Cli::parse();
+    let mut config = Config::config_reader();
     
     match &cli.command {
         RunMode::Config { set_server    } => {
-            println!("Config: {:?}", set_server);
+            println!("Config: {:?}, in config file .nopuma/config.yaml", set_server);
+            config.config_writer(set_server);
+        }
+        RunMode::ConfigShow => {
+            println!("Config: {:?}", config.server);
         }
         RunMode::ProcDefine => {
-            println!("ProcDefine");
+            println!("ProcDefine Interactive TUI");
+            // This gui allow the user to define a process
+            // by adding a step (node) linked to the selected node
+            // the selected node is rendered with double border
+            // the user can add a step by pressing the 'a' key
+            // the user can delete a step by pressing the 'd' key
+            // Each step has a name, a description, a role, and a list of roles
+            // also each step has an cardinal number identifier
+            // the user can save the process definition to a json file
+            // the user can commit the process definition to the server
+
         }
         RunMode::ProcCommit{ name, filename} => {
+            println!("Write the json file for the process definition");
             println!("ProcCommit: {:?} {:?}", name, filename);
         }
         RunMode::RoleSubscription => {
+            println!("RoleSubscription Interactive TUI");
             println!("RoleSubscription");
         }
         RunMode::RoleSubrequest{ filename, keyfilename} => {
